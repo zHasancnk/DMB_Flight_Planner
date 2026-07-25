@@ -77,7 +77,7 @@
   input, select {
     width: 100%; padding: 12px; background-color: #2a2a2a;
     border: 1px solid var(--border); color: white; border-radius: 4px;
-    font-size: 16px;
+    font-size: 16px; /* 16px avoids iOS Safari auto-zoom-on-focus */
   }
   .btn-submit, .btn-secondary {
     padding: 13px 16px; border: none; border-radius: 4px; font-size: 15px;
@@ -173,15 +173,6 @@
 
   <!-- ======================= TAB 3: CANLI RAPOR & İNDİRME ======================= -->
   <div id="tab3" class="tab-content">
-    
-    <!-- DOĞRUDAN GÖRÜNÜM -->
-    <div class="card">
-      <h2>DOĞRUDAN E-TABLO (SHEETS) GÖRÜNÜMÜ</h2>
-      <p class="hint">Tablo içeriğini anlık olarak buradan izleyebilirsiniz.</p>
-      <iframe src="https://docs.google.com/spreadsheets/d/1gyv0c2QzfNZMeignr1c_nv9mmkVKLeA7TeZL8Hc12tQ/edit?embedded=true" style="height: 50vh; min-height: 350px; border: 1px solid #333;"></iframe>
-    </div>
-
-    <!-- GRAFİKLER -->
     <div class="card">
       <h2>OPERASYON VERİTABANI VE RAPOR</h2>
       <p class="hint">Google E-Tablosu'ndan canlı veri çeker; pilot/batarya/iptal istatistiklerini hesaplar ve grafiklere döker.</p>
@@ -232,18 +223,38 @@
    ========================================================= */
 const CONFIG = {
   GOOGLE_FORM_ID: "1FAIpQLSea_k1kV_2RzjleqcKS2Ry4qUirxZIvtiwxYuZy_qTzZDcp9A",
+  // Bu, E-Tablo'nun normal adres çubuğu ID'sidir: https://docs.google.com/spreadsheets/d/BURASI/edit
+  // "Web'de yayınla" adımına GEREK YOK. Sadece E-Tablo'da Paylaş → "Bağlantıya sahip olan
+  // herkes" açık olmalı (Görüntüleyici yeterli, Düzenleyici de çalışır). Veri gviz/tq uç
+  // noktasından çekilir çünkü tarayıcıdan fetch() ile CORS'a izin veren tek yol budur.
   GOOGLE_SHEET_ID: "1gyv0c2QzfNZMeignr1c_nv9mmkVKLeA7TeZL8Hc12tQ",
+  // Yanıtların olduğu sekme (tab) farklıysa, o sekmeyi Google Sheets'te açıp adres çubuğundaki
+  // "gid=..." değerini buraya kopyalayın. Tek sekme varsa 0 bırakın.
   GOOGLE_SHEET_GID: 0,
-  BATTERY_WARN: 150,
-  BATTERY_RETIRE: 180,
+  BATTERY_WARN: 150,   // sorti sayısı — "İzle" eşiği
+  BATTERY_RETIRE: 180, // sorti sayısı — "Emekliye Ayır" eşiği
 };
 
+/* Sütun adı eşleştirmesi — Google Form soru metinleri değişse bile
+   anahtar kelime eşleşmesiyle bulunur (Türkçe karakter normalize edilir). */
 const COL_KEYWORDS = {
-  date: ["tarih"], shift: ["vardiya"], pilot: ["pilot"], aircraft: ["iha", "hava arac"],
-  battery: ["batarya"], takeoff: ["kalkis"], landing: ["inis"], status: ["durum"],
-  cancelReason: ["iptal neden"], note: ["bulgu", "anomali"],
+  date: ["tarih"],
+  shift: ["vardiya"],
+  pilot: ["pilot"],
+  aircraft: ["iha", "hava arac"],
+  battery: ["batarya"],
+  takeoff: ["kalkis"],
+  landing: ["inis"],
+  status: ["durum"],
+  cancelReason: ["iptal neden"],
+  note: ["bulgu", "anomali"],
 };
 
+/* =========================================================
+   TAB SWITCHING (iframe'ler yalnızca sekme açıldığında yüklenir —
+   iOS Safari'de çift ağır iframe'in aynı anda yüklenmesi donmalara
+   yol açtığı için "tembel yükleme" burada kritik.)
+   ========================================================= */
 function openTab(tabId, btn) {
   document.querySelectorAll(".tab-content").forEach((t) => t.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
@@ -265,6 +276,9 @@ window.addEventListener("DOMContentLoaded", () => {
   openTab("tab1", document.querySelector(".nav-btn"));
 });
 
+/* =========================================================
+   TAB 1 — SORTİ PLANLAYICI (Revizyon-1: iniş→kalkış boşluğu + iniş saatleri)
+   ========================================================= */
 function calculatePlan() {
   const box = document.getElementById("resultBox");
   const startStr = document.getElementById("startTime").value;
@@ -280,7 +294,7 @@ function calculatePlan() {
 
   let start = new Date(`1970-01-01T${startStr}:00`);
   let end = new Date(`1970-01-01T${endStr}:00`);
-  if (end <= start) end.setDate(end.getDate() + 1); 
+  if (end <= start) end.setDate(end.getDate() + 1); // gece yarısını geçen vardiyalar için
 
   const totalWindowMin = (end - start) / 60000;
   const totalFlightMin = sorties * duration;
@@ -321,14 +335,20 @@ function calculatePlan() {
   box.style.display = "block";
 }
 
+/* =========================================================
+   TAB 2 — BULUT UÇUŞ KAYDI (iframe tembel yüklenir)
+   ========================================================= */
 function loadFormIframe() {
   const wrap = document.getElementById("formWrap");
   wrap.innerHTML = `<iframe loading="lazy"
       src="https://docs.google.com/forms/d/e/${CONFIG.GOOGLE_FORM_ID}/viewform?embedded=true" frameborder="0" marginheight="0" marginwidth="0">Yükleniyor…</iframe>`;
 }
 
-let __records = [];   
-let __charts = {};    
+/* =========================================================
+   TAB 3 — CANLI RAPOR (Google Sheets gviz JSON + Chart.js + SheetJS)
+   ========================================================= */
+let __records = [];   // ham satırlar (normalize edilmiş)
+let __charts = {};    // aktif Chart.js örnekleri (yeniden çizerken destroy edilir)
 
 function normalizeTr(s) {
   if (s === null || s === undefined) return "";
@@ -356,6 +376,7 @@ function parseTimeToMinutes(str) {
 }
 
 function parseCsv(text) {
+  // RFC4180'e yakın basit CSV ayrıştırıcı — tırnak içindeki virgül/satır sonlarını doğru işler.
   const rows = [];
   let row = [], field = "", inQuotes = false;
   for (let i = 0; i < text.length; i++) {
@@ -369,7 +390,7 @@ function parseCsv(text) {
       if (c === '"') inQuotes = true;
       else if (c === ",") { row.push(field); field = ""; }
       else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
-      else if (c === "\r") { }
+      else if (c === "\r") { /* skip, \n satırı kapatır */ }
       else field += c;
     }
   }
@@ -378,20 +399,18 @@ function parseCsv(text) {
 }
 
 async function fetchSheetTable() {
-  // YEREL DOSYA (file://) ÇALIŞTIRMA CORS ÇÖZÜMÜ: 
-  // Arka planda tarayıcının yerel dosya güvenliğini aşması için veriyi bir Açık Kaynak Proxy üzerinden geçiriyoruz.
-  const targetUrl = `https://docs.google.com/spreadsheets/d/${CONFIG.GOOGLE_SHEET_ID}/export?format=csv&gid=${CONFIG.GOOGLE_SHEET_GID}`;
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-  
-  const res = await fetch(proxyUrl);
-  if (!res.ok) throw new Error("Ağ isteği başarısız: HTTP " + res.status);
-  
+  // gviz/tq: Google'ın CORS'a izin verdiği tek client-side uç noktası.
+  // "export?format=csv" ve "pub?output=csv" tarayıcıdan doğrudan fetch() ile
+  // çağrıldığında CORS başlığı döndürmüyor ve istek "Failed to fetch" ile
+  // tamamen engelleniyor (hata mesajına bile ulaşmadan). gviz/tq bunu döndürür.
+  const url = `https://docs.google.com/spreadsheets/d/${CONFIG.GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${CONFIG.GOOGLE_SHEET_GID}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Sheet isteği başarısız: HTTP " + res.status);
   let text = await res.text();
   if (/^\s*<(!doctype|html)/i.test(text)) {
-    throw new Error("E-Tablo'ya erişilemiyor. Lütfen Tabloyu 'Bağlantıya Sahip Herkes' iznine getirin.");
+    throw new Error("E-Tablo'ya erişilemiyor (giriş sayfası döndü). Paylaşım ayarını kontrol edin: \"Bağlantıya sahip olan herkes\" açık mı?");
   }
-  
-  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1); // UTF-8 BOM temizliği
   const table = parseCsv(text);
   if (!table.length) throw new Error("Sayfa boş görünüyor.");
   const headers = table[0];
@@ -419,7 +438,7 @@ function buildRecords(headers, rows) {
     let durationMin = null;
     if (takeoffMin !== null && landingMin !== null) {
       durationMin = landingMin - takeoffMin;
-      if (durationMin < 0) durationMin += 24 * 60; 
+      if (durationMin < 0) durationMin += 24 * 60; // gece yarısı sarması güvenliği
     }
     const statusRaw = idx.status >= 0 ? String(r[idx.status] || "") : "";
     const statusNorm = normalizeTr(statusRaw);
@@ -459,19 +478,26 @@ function batteryStatusLabel(cycles) {
 async function loadReport(forceRefresh) {
   const statusEl = document.getElementById("reportStatus");
   const bodyEl = document.getElementById("reportBody");
-  statusEl.textContent = "Veriler Google Sunucularından çekiliyor…";
+  statusEl.textContent = "Rapor yükleniyor…";
   bodyEl.style.display = "none";
+
+  if (!CONFIG.GOOGLE_SHEET_ID) {
+    statusEl.innerHTML = `<div class="error-box">Sheet ID'si tanımlı değil. CONFIG.GOOGLE_SHEET_ID alanını doldurun ve
+      E-Tablo'da Paylaş → "Bağlantıya sahip olan herkes: Görüntüleyebilir" ayarını yapın.</div>`;
+    return;
+  }
 
   try {
     const { headers, rows } = await fetchSheetTable();
     __records = buildRecords(headers, rows);
     window.__reportLoaded = true;
     renderReport();
-    statusEl.innerHTML = `<span style="color:var(--ok)">Rapor Güncellendi: ${new Date().toLocaleTimeString("tr-TR")}</span>`;
+    statusEl.textContent = `Son güncelleme: ${new Date().toLocaleString("tr-TR")} · ${__records.length} kayıt`;
     bodyEl.style.display = "block";
   } catch (err) {
     statusEl.innerHTML = `<div class="error-box">Rapor yüklenemedi: ${err.message}<br>
-      Eğer sürekli bu hatayı alırsanız üstteki Gömülü Tabloyu inceleyebilirsiniz.</div>`;
+      Kontrol edin: (1) İnternet bağlantısı, (2) E-Tablo Paylaş ayarı "Bağlantıya sahip olan herkes: Görüntüleyebilir" mi,
+      (3) CONFIG.GOOGLE_SHEET_ID ve GOOGLE_SHEET_GID doğru mu.</div>`;
   }
 }
 
@@ -490,12 +516,14 @@ function renderReport() {
     <div class="stat-box"><div class="num">${totalFlightHours.toFixed(1)}</div><div class="lbl">Toplam Filo Uçuş Saati</div></div>
   `;
 
+  // --- pilot bazlı toplam süre ---
   const pilotMin = {};
   __records.filter((r) => r.completed && r.durationMin).forEach((r) => {
     const key = r.pilot || "Bilinmiyor";
     pilotMin[key] = (pilotMin[key] || 0) + r.durationMin;
   });
 
+  // --- batarya bazlı toplam süre + cycle ---
   const batteryMin = {};
   const batteryCycles = {};
   __records.filter((r) => r.completed).forEach((r) => {
@@ -504,6 +532,7 @@ function renderReport() {
     batteryMin[key] = (batteryMin[key] || 0) + (r.durationMin || 0);
   });
 
+  // --- iptal nedenleri ---
   const cancelCounts = {};
   __records.filter((r) => r.cancelled).forEach((r) => {
     const reason = classifyCancelReason(r.cancelReason) || "Belirtilmemiş";
@@ -520,7 +549,7 @@ function destroyChart(id) {
 }
 
 function drawCharts({ completed, cancelled, pilotMin, batteryMin, cancelCounts }) {
-  if (typeof Chart === "undefined") return; 
+  if (typeof Chart === "undefined") return; // Chart.js henüz yüklenmediyse sessizce çık
 
   const palette = ["#d4af37", "#4caf7d", "#4a90d9", "#cf6679", "#e0b13c", "#9b6fd4", "#5ac8c8"];
 
@@ -601,6 +630,9 @@ function renderRawTable() {
   document.getElementById("rawTable").innerHTML = html;
 }
 
+/* =========================================================
+   İNDİRME (SheetJS — Excel/CSV, mevcut ekrandaki senkronize veriden)
+   ========================================================= */
 function toExportRows() {
   return __records.map((r) => ({
     Tarih: r.date, Vardiya: r.shift, Pilot: r.pilot, İHA: r.aircraft, "Batarya Çift ID": r.battery,
