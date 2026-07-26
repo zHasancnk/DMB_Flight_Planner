@@ -125,6 +125,7 @@
   .config-note { font-size: 12px; color: var(--text-dim); background: #191919; border: 1px dashed var(--border); padding: 10px; border-radius: 4px; margin-top: 10px; }
   code { background: #000; padding: 2px 5px; border-radius: 3px; color: var(--primary); font-size: 12px; }
 
+  /* ================= CHECKLIST TASARIMI ================= */
   .pdf-wrapper { background: #fff; padding: 30px; border-radius: 8px; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: auto; margin-top: 20px;}
   .pdf-header { text-align: center; border-bottom: 3px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; }
   .pdf-header h1 { color: #121212; margin: 0; font-size: 24px; text-transform: uppercase;}
@@ -135,9 +136,18 @@
   .cl-table td.chk-col { width: 45px; text-align: center; }
   .cl-table td.resp-col { width: 90px; text-align: center; font-style: italic; font-weight: 600; color: #555; }
   .pdf-wrapper input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; accent-color: var(--ok); }
-
+  
+  /* PDF Çıktısı İçin Sayfa Kesme (Page Break) Sınıfları */
   .section-break { page-break-before: always; margin-top: 20px; }
   .cl-table tr { page-break-inside: avoid; }
+
+  @media print {
+    .navbar, .btn-row, #tab4 > .card > p.hint { display: none !important; }
+    body { background: #fff; }
+    .tab-content { padding: 0; max-width: 100%; }
+    #tab4 .card { box-shadow: none; border: none; padding: 0; background: #fff; }
+    .pdf-wrapper { padding: 0; margin-top: 0; }
+  }
 </style>
 </head>
 <body>
@@ -149,6 +159,7 @@
     <button class="nav-btn" data-tab="tab4" onclick="openTab('tab4', this)">4. Checklist</button>
   </div>
 
+  <!-- ======================= TAB 1: SORTİ PLANLAYICI ======================= -->
   <div id="tab1" class="tab-content active">
     <div class="card">
       <h2>UÇUŞ SLOT PLANLAYICI (SOP-01)</h2>
@@ -162,14 +173,16 @@
     </div>
   </div>
 
+  <!-- ======================= TAB 2: BULUT UÇUŞ KAYDI ======================= -->
   <div id="tab2" class="tab-content">
     <div class="card">
       <h2>SENKRONİZE UÇUŞ KAYDI</h2>
       <p class="hint">Bu ekrandan girilen veriler bulut sunucusuna (Google Form → Google Sheets) yazılır. İnternet bağlantısı gereklidir.</p>
       <div class="config-note">
-        Formda önerilen soru sırası: <code>Tarih</code> · <code>Vardiya</code> · <code>Pilot (A/B/C)</code> ·
-        <code>İHA (M30-01/M30T-01)</code> · <code>Batarya Çift ID</code> · <code>Kalkış Saati</code> · <code>İniş Saati</code> ·
-        <code>Durum (Tamamlandı/İptal)</code> · <code>İptal Nedeni</code> · <code>Bulgu/Anomali</code>
+        Mevcut form şemanız: <code>Zaman damgası</code> · <code>Pilot Adı</code> · <code>İHA Modeli</code> ·
+        <code>Batarya</code> · <code>Kalkış Saati</code> · <code>İniş Saati</code> · <code>Anomali</code> ·
+        <code>Acil Durum</code> (boşsa/"YOK" ise tamamlandı, doluysa iptal nedeni sayılır) · <code>Uçuş Tarihi</code>.
+        Not: bazı eski kayıtlarda "İniş Saati" hâlâ süre (ör. "25") olarak girilmiş — yeni kayıtlarda mutlaka saat girin (ör. 22:27).
       </div>
       <div id="formWrap" style="margin-top:14px;">
         <button class="btn-submit" onclick="loadFormIframe()">FORMU YÜKLE</button>
@@ -177,6 +190,7 @@
     </div>
   </div>
 
+  <!-- ======================= TAB 3: CANLI RAPOR & İNDİRME ======================= -->
   <div id="tab3" class="tab-content">
     <div class="card">
       <h2>OPERASYON VERİTABANI VE RAPOR</h2>
@@ -203,7 +217,7 @@
       </div>
       <div class="card">
         <h3>Batarya Çifti Ömür Durumu</h3>
-        <p class="hint">Eşik: 150 sorti "İzle", 180 sorti "Emekliye Ayır" (DMB-SEC-UAS SOP referansı).</p>
+        <p class="hint">Eşik: 200 sorti “İzle”, 250 sorti “Emekliye Ayır” (DMB-SEC-UAS SOP referansı). Veriler eski uçuşlar baz alınarak üzerine eklenmektedir.</p>
         <div class="table-scroll"><table class="data-table" id="batteryTable"></table></div>
       </div>
       <div class="card">
@@ -213,13 +227,14 @@
     </div>
   </div>
 
+  <!-- ================= TAB 4: CHECKLIST ================= -->
   <div id="tab4" class="tab-content">
     <div class="card">
       <h2>DMB STANDART OPERASYON PROSEDÜRÜ (SOP) KONTROL LİSTESİ</h2>
       <p class="hint">Kutucukları işaretleyip PDF formatında cihazınıza indirebilirsiniz. Her bölüm PDF'te yeni bir sayfadan başlayacak şekilde ayarlanmıştır.</p>
-
+      
       <div class="btn-row">
-        <button class="btn-submit" onclick="downloadChecklistPDF()">PDF OLARAK İNDİR</button>
+        <button class="btn-submit" onclick="downloadChecklistPDF()">YAZDIR / PDF OLARAK KAYDET</button>
         <button class="btn-secondary" onclick="resetChecklist()">İŞARETLERİ TEMİZLE</button>
       </div>
 
@@ -228,6 +243,7 @@
           <h1>DMB İHA UÇUŞ KONTROL LİSTESİ</h1>
         </div>
 
+        <!-- BÖLÜM 1 -->
         <div class="cl-section">BÖLÜM 1: UÇUŞ ÖNCESİ (PRE-FLIGHT)</div>
         <div class="cl-subsection">1.1 OPERASYONEL KOORDİNASYON</div>
         <table class="cl-table">
@@ -250,6 +266,7 @@
           <tr><td class="chk-col"><input type="checkbox"></td><td>Bir önceki uçuşa ait rota/cache verisi arayüzden temizlendi, mevcut görev planı yüklendi.</td><td class="resp-col">Pilot</td></tr>
         </table>
 
+        <!-- BÖLÜM 2 -->
         <div class="section-break"></div>
         <div class="cl-section">BÖLÜM 2: UÇUŞ İÇİ (IN-FLIGHT)</div>
         <div class="cl-subsection">2.1 KALKIŞ VE STABİLİZASYON</div>
@@ -271,6 +288,7 @@
           <tr><td class="chk-col"><input type="checkbox"></td><td>RTH (Return-to-Home) rotasına manuel veya otomatik olarak girildi.</td><td class="resp-col">Pilot</td></tr>
         </table>
 
+        <!-- BÖLÜM 3 -->
         <div class="section-break"></div>
         <div class="cl-section">BÖLÜM 3: UÇUŞ SONRASI (POST-FLIGHT)</div>
         <div class="cl-subsection">3.1 İNİŞ VE KAPATMA</div>
@@ -292,6 +310,7 @@
           <tr><td class="chk-col"><input type="checkbox"></td><td>Sistem, ani/plansız görev talebine karşı standby (hazır bekleme) konumuna alındı.</td><td class="resp-col">Pilot</td></tr>
         </table>
 
+        <!-- BÖLÜM 4 -->
         <div class="section-break"></div>
         <div class="cl-section" style="background:#4a1212; color:#cf6679;">BÖLÜM 4: ACİL DURUM PROSEDÜRÜ (YALNIZCA GEREKTİĞİNDE)</div>
         <div class="cl-subsection" style="border-left: 4px solid #cf6679;">4.1 ANİ HELİKOPTER YAKLAŞMASI</div>
@@ -307,20 +326,29 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script>
 const CONFIG = {
   GOOGLE_FORM_ID: "1FAIpQLSea_k1kV_2RzjleqcKS2Ry4qUirxZIvtiwxYuZy_qTzZDcp9A",
   GOOGLE_SHEET_ID: "1gyv0c2QzfNZMeignr1c_nv9mmkVKLeA7TeZL8Hc12tQ",
   GOOGLE_SHEET_GID: 0,
-  BATTERY_WARN: 150,
-  BATTERY_RETIRE: 180,
+  BATTERY_WARN: 200,    // Uyarı Eşiği
+  BATTERY_RETIRE: 250,  // Emeklilik Eşiği
+};
+
+// Bataryaların geçmişten gelen döngü sayısı (Her çift için ortalama)
+const BATTERY_BASE_CYCLES = {
+  "I": 60,
+  "II": 94,
+  "III": 128,
+  "IV": 83,
+  "V": 95,
+  "VI": 57,
+  "VII": 102
 };
 
 const COL_KEYWORDS = {
-  date: ["tarih"], shift: ["vardiya"], pilot: ["pilot"], aircraft: ["iha", "hava arac"],
-  battery: ["batarya"], takeoff: ["kalkis"], landing: ["inis"], status: ["durum"],
-  cancelReason: ["iptal neden"], note: ["bulgu", "anomali"],
+  timestamp: ["zaman damga"], date: ["ucus tarihi"], pilot: ["pilot"], aircraft: ["iha modeli", "iha"],
+  battery: ["batarya"], takeoff: ["kalkis"], landing: ["inis"], anomaly: ["anomali"], emergency: ["acil durum"],
 };
 
 function openTab(tabId, btn) {
@@ -397,43 +425,73 @@ function parseTimeToMinutes(str) {
   if (!str) return null; const m = String(str).match(/(\d{1,2}):(\d{2})/);
   if (!m) return null; return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
 }
-function parseCsv(text) {
-  const rows = []; let row = [], field = "", inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else { inQuotes = false; } } else { field += c; }
-    } else {
-      if (c === '"') inQuotes = true; else if (c === ",") { row.push(field); field = ""; } else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; } else if (c === "\r") {} else field += c;
-    }
-  }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows.filter((r) => r.length > 1 || (r.length === 1 && r[0] !== ""));
+
+// ==== JSONP (script tag) ile veri çekiliyor — fetch() DEĞİL. Google'ın gviz/pub uç noktaları
+// fetch()/XHR için CORS izni vermez; bu yüzden "Failed to fetch" hatası fetch() ile
+// neredeyse kaçınılmazdır. Script-tag yüklemesi CORS'a hiç takılmaz. ====
+function fetchSheetTable() {
+  return new Promise((resolve, reject) => {
+    const cbName = "__gvizCb_" + Date.now();
+    let settled = false;
+    const cleanup = () => { delete window[cbName]; if (scriptEl && scriptEl.parentNode) scriptEl.parentNode.removeChild(scriptEl); clearTimeout(timeoutId); };
+    window[cbName] = function (resp) {
+      if (settled) return; settled = true;
+      try {
+        if (!resp || !resp.table) throw new Error("Beklenmeyen yanıt biçimi.");
+        const headers = resp.table.cols.map((c) => (c ? c.label || c.id || "" : ""));
+        const rows = resp.table.rows.map((r) => (r.c || []).map((c) => (c ? (c.f !== undefined && c.f !== null ? c.f : c.v) : "")));
+        cleanup(); resolve({ headers, rows });
+      } catch (e) { cleanup(); reject(e); }
+    };
+    const timeoutId = setTimeout(() => {
+      if (settled) return; settled = true; cleanup();
+      reject(new Error("Zaman aşımı — tablo yanıt vermedi. ID doğru mu ve paylaşım 'Bağlantıya sahip olan herkes' mi?"));
+    }, 9000);
+    const url = `https://docs.google.com/spreadsheets/d/${CONFIG.GOOGLE_SHEET_ID}/gviz/tq?gid=${CONFIG.GOOGLE_SHEET_GID}&tqx=out:json;responseHandler:${cbName}`;
+    const scriptEl = document.createElement("script");
+    scriptEl.src = url;
+    scriptEl.onerror = () => { if (settled) return; settled = true; cleanup(); reject(new Error("Tablo betiği yüklenemedi — dosya ID'si veya paylaşım izni hatalı olabilir.")); };
+    document.head.appendChild(scriptEl);
+  });
 }
-async function fetchSheetTable() {
-  // gviz/tq: Google'ın tarayıcıdan fetch() ile CORS'a izin verdiği tek uç nokta.
-  // export?format=csv, paylaşım/tarayıcı kombinasyonuna göre CORS engeli veya
-  // 400 Bad Request ile başarısız olabiliyor — bu yüzden gviz/tq kullanılır.
-  const res = await fetch(`https://docs.google.com/spreadsheets/d/${CONFIG.GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${CONFIG.GOOGLE_SHEET_GID}`);
-  if (!res.ok) throw new Error("Ağ isteği başarısız: HTTP " + res.status);
-  let text = await res.text();
-  if (/^\s*<(!doctype|html)/i.test(text)) throw new Error("E-Tablo erişime kapalı.");
-  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
-  const table = parseCsv(text); if (!table.length) throw new Error("Sayfa boş.");
-  return { headers: table[0], rows: table.slice(1) };
-}
+
 function buildRecords(headers, rows) {
   const idx = {
-    date: findColIndex(headers, COL_KEYWORDS.date), shift: findColIndex(headers, COL_KEYWORDS.shift), pilot: findColIndex(headers, COL_KEYWORDS.pilot), aircraft: findColIndex(headers, COL_KEYWORDS.aircraft), battery: findColIndex(headers, COL_KEYWORDS.battery), takeoff: findColIndex(headers, COL_KEYWORDS.takeoff), landing: findColIndex(headers, COL_KEYWORDS.landing), status: findColIndex(headers, COL_KEYWORDS.status), cancelReason: findColIndex(headers, COL_KEYWORDS.cancelReason), note: findColIndex(headers, COL_KEYWORDS.note)
+    timestamp: findColIndex(headers, COL_KEYWORDS.timestamp), date: findColIndex(headers, COL_KEYWORDS.date),
+    pilot: findColIndex(headers, COL_KEYWORDS.pilot), aircraft: findColIndex(headers, COL_KEYWORDS.aircraft),
+    battery: findColIndex(headers, COL_KEYWORDS.battery), takeoff: findColIndex(headers, COL_KEYWORDS.takeoff),
+    landing: findColIndex(headers, COL_KEYWORDS.landing), anomaly: findColIndex(headers, COL_KEYWORDS.anomaly),
+    emergency: findColIndex(headers, COL_KEYWORDS.emergency),
   };
   return rows.map((r) => {
     const takeoffMin = idx.takeoff >= 0 ? parseTimeToMinutes(r[idx.takeoff]) : null;
     const landingMin = idx.landing >= 0 ? parseTimeToMinutes(r[idx.landing]) : null;
     let durationMin = null;
     if (takeoffMin !== null && landingMin !== null) { durationMin = landingMin - takeoffMin; if (durationMin < 0) durationMin += 24 * 60; }
-    const statusRaw = idx.status >= 0 ? String(r[idx.status] || "") : ""; const statusNorm = normalizeTr(statusRaw);
+    // "İniş Saati" hücresine hâlâ eski biçimde süre (ör. "25") girilmiş eski kayıtlar için: saat
+    // biçimi bulunamazsa ve hücre düz bir sayıysa, bunu dakika cinsinden süre olarak kabul et.
+    if (durationMin === null && landingMin === null && idx.landing >= 0) {
+      const raw = String(r[idx.landing] || "").trim();
+      if (/^\d+([.,]\d+)?$/.test(raw)) durationMin = Math.round(parseFloat(raw.replace(",", ".")));
+    }
+    let date = idx.date >= 0 ? String(r[idx.date] || "").trim() : "";
+    if (!date && idx.timestamp >= 0) {
+      const ts = String(r[idx.timestamp] || ""); const m = ts.match(/(\d{1,2}[./]\d{1,2}[./]\d{2,4})/);
+      if (m) date = m[1];
+    }
+    const emergencyRaw = idx.emergency >= 0 ? String(r[idx.emergency] || "").trim() : "";
+    const emergencyNorm = normalizeTr(emergencyRaw);
+    // Formunuzda ayrı bir "Durum" sorusu yok — "Acil Durum" alanı bunu üstleniyor:
+    // "YOK (...)" ile başlıyorsa sorti tamamlanmış/emniyetli sayılır, başka bir şey yazıyorsa iptal/erken iniş nedenidir.
+    const completed = emergencyRaw === "" || emergencyNorm.startsWith("yok");
+    const cancelled = !completed;
     return {
-      date: idx.date >= 0 ? r[idx.date] : "", shift: idx.shift >= 0 ? r[idx.shift] : "", pilot: idx.pilot >= 0 ? String(r[idx.pilot] || "").trim() : "", aircraft: idx.aircraft >= 0 ? r[idx.aircraft] : "", battery: idx.battery >= 0 ? String(r[idx.battery] || "").trim() : "", takeoff: idx.takeoff >= 0 ? r[idx.takeoff] : "", landing: idx.landing >= 0 ? r[idx.landing] : "", durationMin, status: statusRaw, completed: statusNorm.includes("tamam"), cancelled: statusNorm.includes("iptal"), cancelReason: idx.cancelReason >= 0 ? String(r[idx.cancelReason] || "") : "", note: idx.note >= 0 ? r[idx.note] : ""
+      date, pilot: idx.pilot >= 0 ? String(r[idx.pilot] || "").trim() : "",
+      aircraft: idx.aircraft >= 0 ? String(r[idx.aircraft] || "").trim() : "",
+      battery: idx.battery >= 0 ? String(r[idx.battery] || "").trim() : "",
+      takeoff: idx.takeoff >= 0 ? r[idx.takeoff] : "", landing: idx.landing >= 0 ? r[idx.landing] : "",
+      durationMin, status: completed ? "Tamamlandı" : "İptal / Erken İniş", completed, cancelled,
+      cancelReason: cancelled ? emergencyRaw : "", note: idx.anomaly >= 0 ? String(r[idx.anomaly] || "").trim() : "",
     };
   });
 }
@@ -455,10 +513,23 @@ function renderReport() {
   const total = __records.length; const completed = __records.filter((r) => r.completed).length; const cancelled = __records.filter((r) => r.cancelled).length;
   const totalFlightHours = __records.filter((r) => r.completed && r.durationMin).reduce((s, r) => s + r.durationMin, 0) / 60;
   document.getElementById("statGrid").innerHTML = `<div class="stat-box"><div class="num">${total}</div><div class="lbl">Toplam Sorti</div></div><div class="stat-box"><div class="num" style="color:var(--ok)">${completed}</div><div class="lbl">Tamamlanan</div></div><div class="stat-box"><div class="num" style="color:var(--danger)">${cancelled}</div><div class="lbl">İptal Edilen</div></div><div class="stat-box"><div class="num">${totalFlightHours.toFixed(1)}</div><div class="lbl">Toplam Filo Uçuş Saati</div></div>`;
-  const pilotMin = {}; __records.filter((r) => r.completed && r.durationMin).forEach((r) => { const key = r.pilot || "Bilinmiyor"; pilotMin[key] = (pilotMin[key] || 0) + r.durationMin; });
-  const batteryMin = {}; const batteryCycles = {};
-  __records.filter((r) => r.completed).forEach((r) => { const key = r.battery || "Bilinmiyor"; batteryCycles[key] = (batteryCycles[key] || 0) + 1; batteryMin[key] = (batteryMin[key] || 0) + (r.durationMin || 0); });
+  
+  const pilotMin = {}; 
+  __records.filter((r) => r.completed && r.durationMin).forEach((r) => { const key = r.pilot || "Bilinmiyor"; pilotMin[key] = (pilotMin[key] || 0) + r.durationMin; });
+  
+  // Batarya döngülerini geçmiş (base) verilerle başlatıyoruz
+  const batteryCycles = { ...BATTERY_BASE_CYCLES }; 
+  const batteryMin = {};
+  
+  __records.filter((r) => r.completed).forEach((r) => { 
+    // Boşlukları temizleyip büyük harfe çeviriyoruz (Örn: formdan " I" girilirse "I" ile eşleşsin)
+    const key = (r.battery || "Bilinmiyor").trim().toUpperCase(); 
+    batteryCycles[key] = (batteryCycles[key] || 0) + 1; 
+    batteryMin[key] = (batteryMin[key] || 0) + (r.durationMin || 0); 
+  });
+  
   const cancelCounts = {}; __records.filter((r) => r.cancelled).forEach((r) => { const reason = classifyCancelReason(r.cancelReason) || "Belirtilmemiş"; cancelCounts[reason] = (cancelCounts[reason] || 0) + 1; });
+  
   drawCharts({ completed, cancelled, pilotMin, batteryMin, cancelCounts }); renderBatteryTable(batteryCycles, batteryMin); renderRawTable();
 }
 function destroyChart(id) { if (__charts[id]) { __charts[id].destroy(); delete __charts[id]; } }
@@ -467,42 +538,34 @@ function drawCharts({ completed, cancelled, pilotMin, batteryMin, cancelCounts }
   destroyChart("status"); __charts.status = new Chart(document.getElementById("chartStatus"), { type: "pie", data: { labels: ["Tamamlandı", "İptal"], datasets: [{ data: [completed, cancelled], backgroundColor: ["#4caf7d", "#cf6679"] }] }, options: { plugins: { legend: { labels: { color: "#e0e0e0" } } } } });
   const cancelLabels = Object.keys(cancelCounts); destroyChart("cancel"); __charts.cancel = new Chart(document.getElementById("chartCancel"), { type: "pie", data: { labels: cancelLabels.length ? cancelLabels : ["Veri yok"], datasets: [{ data: cancelLabels.length ? cancelLabels.map((k) => cancelCounts[k]) : [1], backgroundColor: palette }] }, options: { plugins: { legend: { labels: { color: "#e0e0e0" } } } } });
   const pilotLabels = Object.keys(pilotMin); destroyChart("pilot"); __charts.pilot = new Chart(document.getElementById("chartPilot"), { type: "bar", data: { labels: pilotLabels, datasets: [{ label: "Saat", data: pilotLabels.map((k) => +(pilotMin[k] / 60).toFixed(2)), backgroundColor: "#d4af37" }] }, options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#e0e0e0" } }, y: { ticks: { color: "#e0e0e0" } } } } });
-  const batteryLabels = Object.keys(batteryMin); destroyChart("battery"); __charts.battery = new Chart(document.getElementById("chartBattery"), { type: "bar", data: { labels: batteryLabels, datasets: [{ label: "Dakika", data: batteryLabels.map((k) => batteryMin[k]), backgroundColor: "#4a90d9" }] }, options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#e0e0e0" } }, y: { ticks: { color: "#e0e0e0" } } } } });
+  const batteryLabels = Object.keys(batteryMin); destroyChart("battery"); __charts.battery = new Chart(document.getElementById("chartBattery"), { type: "bar", data: { labels: batteryLabels, datasets: [{ label: "Dakika (Formdan Gelen)", data: batteryLabels.map((k) => batteryMin[k]), backgroundColor: "#4a90d9" }] }, options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#e0e0e0" } }, y: { ticks: { color: "#e0e0e0" } } } } });
 }
 function renderBatteryTable(batteryCycles, batteryMin) {
-  let html = `<tr><th>Batarya Çift ID</th><th>Cycle (Sorti)</th><th>Toplam Süre (dk)</th><th>Durum</th></tr>`;
-  Object.keys(batteryCycles).sort().forEach((id) => { const cycles = batteryCycles[id]; const st = batteryStatusLabel(cycles); html += `<tr><td>${id}</td><td>${cycles}</td><td>${batteryMin[id] || 0}</td><td><span class="status-pill ${st.cls}">${st.label}</span></td></tr>`; });
+  let html = `<tr><th>Batarya Çift ID</th><th>Cycle (Geçmiş + Yeni Sorti)</th><th>Süre (Formdan, dk)</th><th>Durum</th></tr>`;
+  Object.keys(batteryCycles).sort().forEach((id) => { const cycles = batteryCycles[id]; const st = batteryStatusLabel(cycles); html += `<tr><td>${id}</td><td><b>${cycles}</b></td><td>${batteryMin[id] || 0}</td><td><span class="status-pill ${st.cls}">${st.label}</span></td></tr>`; });
   document.getElementById("batteryTable").innerHTML = html || "<tr><td>Veri yok</td></tr>";
 }
 function renderRawTable() {
-  let html = `<tr><th>Tarih</th><th>Vardiya</th><th>Pilot</th><th>İHA</th><th>Batarya</th><th>Kalkış</th><th>İniş</th><th>Süre</th><th>Durum</th><th>İptal</th><th>Not</th></tr>`;
-  __records.forEach((r) => { html += `<tr><td>${r.date}</td><td>${r.shift}</td><td>${r.pilot}</td><td>${r.aircraft}</td><td>${r.battery}</td><td>${r.takeoff}</td><td>${r.landing}</td><td>${r.durationMin}</td><td>${r.status}</td><td>${r.cancelReason}</td><td>${r.note}</td></tr>`; });
+  let html = `<tr><th>Tarih</th><th>Pilot</th><th>İHA</th><th>Batarya</th><th>Kalkış</th><th>İniş</th><th>Süre (dk)</th><th>Durum</th><th>Neden/Not</th><th>Anomali</th></tr>`;
+  __records.forEach((r) => { html += `<tr><td>${r.date}</td><td>${r.pilot}</td><td>${r.aircraft}</td><td>${r.battery}</td><td>${r.takeoff}</td><td>${r.landing}</td><td>${r.durationMin !== null ? r.durationMin : ""}</td><td>${r.status}</td><td>${r.cancelReason}</td><td>${r.note}</td></tr>`; });
   document.getElementById("rawTable").innerHTML = html;
 }
-function toExportRows() { return __records.map((r) => ({ Tarih: r.date, Vardiya: r.shift, Pilot: r.pilot, İHA: r.aircraft, "Batarya ID": r.battery, "Kalkış": r.takeoff, "İniş": r.landing, "Süre(dk)": r.durationMin, Durum: r.status, "İptal": r.cancelReason, "Bulgu": r.note })); }
+function toExportRows() { return __records.map((r) => ({ Tarih: r.date, Pilot: r.pilot, İHA: r.aircraft, "Batarya ID": r.battery, "Kalkış": r.takeoff, "İniş": r.landing, "Süre(dk)": r.durationMin, Durum: r.status, "Neden/Not": r.cancelReason, "Anomali": r.note })); }
 function downloadExcel() { if (typeof XLSX === "undefined") return; const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toExportRows()), "Ucuslar"); XLSX.writeFile(wb, `DMB_Rapor.xlsx`); }
 function downloadCsv() { if (typeof XLSX === "undefined") return; const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(toExportRows())); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" })); a.download = `DMB_Rapor.csv`; a.click(); }
 
+/* ================= CHECKLIST KONTROLLERİ VE SAYFA KESME ================= */
 function resetChecklist() {
   if(confirm("Tüm işaretlemeler temizlenecek. Onaylıyor musunuz?")) {
     document.querySelectorAll('#pdfContent input[type="checkbox"]').forEach(cb => cb.checked = false);
   }
 }
 function downloadChecklistPDF() {
-  if (typeof html2pdf === "undefined") {
-    alert("PDF kütüphanesi yükleniyor, lütfen 3-4 saniye bekleyip tekrar tıklayın.");
-    return;
-  }
-  const element = document.getElementById('pdfContent');
-  const opt = {
-    margin:       [10, 10, 10, 10],
-    filename:     `DMB_Ucus_Checklist_${new Date().toISOString().slice(0,10)}.pdf`,
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: 'css', before: '.section-break' }
-  };
-  html2pdf().set(opt).from(element).save();
+  // html2canvas tabanlı kütüphaneler işaretli checkbox durumunu güvenilir şekilde
+  // yakalayamayabiliyor (yaygın bilinen bir sınırlama). Bunun yerine tarayıcının kendi
+  // yazdırma motorunu kullanıyoruz — işaretli kutular PDF'e birebir yansır ve harici
+  // bir kütüphaneye bağımlı kalınmaz. Yazdırma penceresinde "Hedef: PDF olarak kaydet" seçin.
+  window.print();
 }
 </script>
 </body>
