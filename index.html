@@ -159,7 +159,6 @@
     <button class="nav-btn" data-tab="tab4" onclick="openTab('tab4', this)">4. Checklist</button>
   </div>
 
-  <!-- ======================= TAB 1: SORTİ PLANLAYICI ======================= -->
   <div id="tab1" class="tab-content active">
     <div class="card">
       <h2>UÇUŞ SLOT PLANLAYICI (SOP-01)</h2>
@@ -173,7 +172,6 @@
     </div>
   </div>
 
-  <!-- ======================= TAB 2: BULUT UÇUŞ KAYDI ======================= -->
   <div id="tab2" class="tab-content">
     <div class="card">
       <h2>SENKRONİZE UÇUŞ KAYDI</h2>
@@ -190,7 +188,6 @@
     </div>
   </div>
 
-  <!-- ======================= TAB 3: CANLI RAPOR & İNDİRME ======================= -->
   <div id="tab3" class="tab-content">
     <div class="card">
       <h2>OPERASYON VERİTABANI VE RAPOR</h2>
@@ -217,7 +214,7 @@
       </div>
       <div class="card">
         <h3>Batarya Çifti Ömür Durumu</h3>
-        <p class="hint">Eşik: 200 sorti “İzle”, 250 sorti “Emekliye Ayır” (DMB-SEC-UAS SOP referansı). Veriler eski uçuşlar baz alınarak üzerine eklenmektedir.</p>
+        <p class="hint">Eşik: 200 sorti "İzle", 250 sorti "Emekliye Ayır" (DMB-SEC-UAS SOP referansı). Veriler eski uçuşlar baz alınarak üzerine eklenmektedir.</p>
         <div class="table-scroll"><table class="data-table" id="batteryTable"></table></div>
       </div>
       <div class="card">
@@ -227,7 +224,6 @@
     </div>
   </div>
 
-  <!-- ================= TAB 4: CHECKLIST ================= -->
   <div id="tab4" class="tab-content">
     <div class="card">
       <h2>DMB STANDART OPERASYON PROSEDÜRÜ (SOP) KONTROL LİSTESİ</h2>
@@ -243,7 +239,6 @@
           <h1>DMB İHA UÇUŞ KONTROL LİSTESİ</h1>
         </div>
 
-        <!-- BÖLÜM 1 -->
         <div class="cl-section">BÖLÜM 1: UÇUŞ ÖNCESİ (PRE-FLIGHT)</div>
         <div class="cl-subsection">1.1 OPERASYONEL KOORDİNASYON</div>
         <table class="cl-table">
@@ -266,7 +261,6 @@
           <tr><td class="chk-col"><input type="checkbox"></td><td>Bir önceki uçuşa ait rota/cache verisi arayüzden temizlendi, mevcut görev planı yüklendi.</td><td class="resp-col">Pilot</td></tr>
         </table>
 
-        <!-- BÖLÜM 2 -->
         <div class="section-break"></div>
         <div class="cl-section">BÖLÜM 2: UÇUŞ İÇİ (IN-FLIGHT)</div>
         <div class="cl-subsection">2.1 KALKIŞ VE STABİLİZASYON</div>
@@ -288,7 +282,6 @@
           <tr><td class="chk-col"><input type="checkbox"></td><td>RTH (Return-to-Home) rotasına manuel veya otomatik olarak girildi.</td><td class="resp-col">Pilot</td></tr>
         </table>
 
-        <!-- BÖLÜM 3 -->
         <div class="section-break"></div>
         <div class="cl-section">BÖLÜM 3: UÇUŞ SONRASI (POST-FLIGHT)</div>
         <div class="cl-subsection">3.1 İNİŞ VE KAPATMA</div>
@@ -310,7 +303,6 @@
           <tr><td class="chk-col"><input type="checkbox"></td><td>Sistem, ani/plansız görev talebine karşı standby (hazır bekleme) konumuna alındı.</td><td class="resp-col">Pilot</td></tr>
         </table>
 
-        <!-- BÖLÜM 4 -->
         <div class="section-break"></div>
         <div class="cl-section" style="background:#4a1212; color:#cf6679;">BÖLÜM 4: ACİL DURUM PROSEDÜRÜ (YALNIZCA GEREKTİĞİNDE)</div>
         <div class="cl-subsection" style="border-left: 4px solid #cf6679;">4.1 ANİ HELİKOPTER YAKLAŞMASI</div>
@@ -331,19 +323,12 @@ const CONFIG = {
   GOOGLE_FORM_ID: "1FAIpQLSea_k1kV_2RzjleqcKS2Ry4qUirxZIvtiwxYuZy_qTzZDcp9A",
   GOOGLE_SHEET_ID: "1gyv0c2QzfNZMeignr1c_nv9mmkVKLeA7TeZL8Hc12tQ",
   GOOGLE_SHEET_GID: 0,
-  BATTERY_WARN: 200,    // Uyarı Eşiği
-  BATTERY_RETIRE: 250,  // Emeklilik Eşiği
+  BATTERY_WARN: 200,
+  BATTERY_RETIRE: 250,
 };
 
-// Bataryaların geçmişten gelen döngü sayısı (Her çift için ortalama)
 const BATTERY_BASE_CYCLES = {
-  "I": 60,
-  "II": 94,
-  "III": 128,
-  "IV": 83,
-  "V": 95,
-  "VI": 57,
-  "VII": 102
+  "I": 60, "II": 94, "III": 128, "IV": 83, "V": 95, "VI": 57, "VII": 102
 };
 
 const COL_KEYWORDS = {
@@ -426,9 +411,6 @@ function parseTimeToMinutes(str) {
   if (!m) return null; return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
 }
 
-// ==== JSONP (script tag) ile veri çekiliyor — fetch() DEĞİL. Google'ın gviz/pub uç noktaları
-// fetch()/XHR için CORS izni vermez; bu yüzden "Failed to fetch" hatası fetch() ile
-// neredeyse kaçınılmazdır. Script-tag yüklemesi CORS'a hiç takılmaz. ====
 function fetchSheetTable() {
   return new Promise((resolve, reject) => {
     const cbName = "__gvizCb_" + Date.now();
@@ -468,8 +450,6 @@ function buildRecords(headers, rows) {
     const landingMin = idx.landing >= 0 ? parseTimeToMinutes(r[idx.landing]) : null;
     let durationMin = null;
     if (takeoffMin !== null && landingMin !== null) { durationMin = landingMin - takeoffMin; if (durationMin < 0) durationMin += 24 * 60; }
-    // "İniş Saati" hücresine hâlâ eski biçimde süre (ör. "25") girilmiş eski kayıtlar için: saat
-    // biçimi bulunamazsa ve hücre düz bir sayıysa, bunu dakika cinsinden süre olarak kabul et.
     if (durationMin === null && landingMin === null && idx.landing >= 0) {
       const raw = String(r[idx.landing] || "").trim();
       if (/^\d+([.,]\d+)?$/.test(raw)) durationMin = Math.round(parseFloat(raw.replace(",", ".")));
@@ -481,8 +461,6 @@ function buildRecords(headers, rows) {
     }
     const emergencyRaw = idx.emergency >= 0 ? String(r[idx.emergency] || "").trim() : "";
     const emergencyNorm = normalizeTr(emergencyRaw);
-    // Formunuzda ayrı bir "Durum" sorusu yok — "Acil Durum" alanı bunu üstleniyor:
-    // "YOK (...)" ile başlıyorsa sorti tamamlanmış/emniyetli sayılır, başka bir şey yazıyorsa iptal/erken iniş nedenidir.
     const completed = emergencyRaw === "" || emergencyNorm.startsWith("yok");
     const cancelled = !completed;
     return {
@@ -501,6 +479,20 @@ function classifyCancelReason(txt) {
 function batteryStatusLabel(cycles) {
   if (cycles >= CONFIG.BATTERY_RETIRE) return { label: "EMEKLİYE AYIR", cls: "status-danger" }; if (cycles >= CONFIG.BATTERY_WARN) return { label: "İZLE", cls: "status-warn" }; return { label: "AKTİF", cls: "status-ok" };
 }
+
+// Batarya çift ID'lerini I → VII sırasına göre diziyoruz (Roma rakamı sırası);
+// listede olmayan ID'ler (ör. "Bilinmiyor") en sona, alfabetik olarak eklenir.
+const BATTERY_ID_ORDER = Object.keys(BATTERY_BASE_CYCLES);
+function sortBatteryIds(ids) {
+  return ids.slice().sort((a, b) => {
+    const ia = BATTERY_ID_ORDER.indexOf(a), ib = BATTERY_ID_ORDER.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+}
+
 async function loadReport(forceRefresh) {
   const statusEl = document.getElementById("reportStatus"); const bodyEl = document.getElementById("reportBody");
   statusEl.textContent = "Rapor yükleniyor…"; bodyEl.style.display = "none";
@@ -513,31 +505,28 @@ function renderReport() {
   const total = __records.length; const completed = __records.filter((r) => r.completed).length; const cancelled = __records.filter((r) => r.cancelled).length;
   const totalFlightHours = __records.filter((r) => r.completed && r.durationMin).reduce((s, r) => s + r.durationMin, 0) / 60;
   document.getElementById("statGrid").innerHTML = `<div class="stat-box"><div class="num">${total}</div><div class="lbl">Toplam Sorti</div></div><div class="stat-box"><div class="num" style="color:var(--ok)">${completed}</div><div class="lbl">Tamamlanan</div></div><div class="stat-box"><div class="num" style="color:var(--danger)">${cancelled}</div><div class="lbl">İptal Edilen</div></div><div class="stat-box"><div class="num">${totalFlightHours.toFixed(1)}</div><div class="lbl">Toplam Filo Uçuş Saati</div></div>`;
-  
-  const pilotMin = {}; 
+
+  const pilotMin = {};
   __records.filter((r) => r.completed && r.durationMin).forEach((r) => { const key = r.pilot || "Bilinmiyor"; pilotMin[key] = (pilotMin[key] || 0) + r.durationMin; });
-  
-  // Batarya döngülerini geçmiş (base) verilerle başlatıyoruz
-  const batteryCycles = { ...BATTERY_BASE_CYCLES }; 
+
+  const batteryCycles = { ...BATTERY_BASE_CYCLES };
   const batteryMin = {};
-  
-  __records.filter((r) => r.completed).forEach((r) => { 
-    // Boşlukları temizleyip büyük harfe çeviriyoruz (Örn: formdan " I" girilirse "I" ile eşleşsin)
-    const key = (r.battery || "Bilinmiyor").trim().toUpperCase(); 
-    batteryCycles[key] = (batteryCycles[key] || 0) + 1; 
-    batteryMin[key] = (batteryMin[key] || 0) + (r.durationMin || 0); 
+
+  __records.filter((r) => r.completed).forEach((r) => {
+    const key = (r.battery || "Bilinmiyor").trim().toUpperCase();
+    batteryCycles[key] = (batteryCycles[key] || 0) + 1;
+    batteryMin[key] = (batteryMin[key] || 0) + (r.durationMin || 0);
   });
-  
+
   const cancelCounts = {}; __records.filter((r) => r.cancelled).forEach((r) => { const reason = classifyCancelReason(r.cancelReason) || "Belirtilmemiş"; cancelCounts[reason] = (cancelCounts[reason] || 0) + 1; });
-  
-  drawCharts({ completed, cancelled, pilotMin, batteryMin, cancelCounts }); renderBatteryTable(batteryCycles, batteryMin); renderRawTable();
+
+  drawCharts({ completed, cancelled, pilotMin, batteryMin, batteryCycles, cancelCounts }); renderBatteryTable(batteryCycles, batteryMin); renderRawTable();
 }
 function destroyChart(id) { if (__charts[id]) { __charts[id].destroy(); delete __charts[id]; } }
 function drawCharts(chartData, retriesLeft) {
-  if (typeof retriesLeft === "undefined") retriesLeft = 15; // ~6 saniye boyunca dener (400ms x 15)
+  if (typeof retriesLeft === "undefined") retriesLeft = 15;
   if (typeof Chart === "undefined") {
     if (retriesLeft > 0) { setTimeout(() => drawCharts(chartData, retriesLeft - 1), 400); return; }
-    // Kütüphane hâlâ yüklenmediyse kullanıcıyı sessizce bırakmak yerine görünür bir uyarı bırak.
     ["chartStatus", "chartCancel", "chartPilot", "chartBattery"].forEach((id) => {
       const box = document.getElementById(id) && document.getElementById(id).parentElement;
       if (box && !box.querySelector(".chart-fail-msg")) {
@@ -549,16 +538,24 @@ function drawCharts(chartData, retriesLeft) {
     });
     return;
   }
-  const { completed, cancelled, pilotMin, batteryMin, cancelCounts } = chartData;
+  const { completed, cancelled, pilotMin, batteryMin, batteryCycles, cancelCounts } = chartData;
   const palette = ["#d4af37", "#4caf7d", "#4a90d9", "#cf6679", "#e0b13c", "#9b6fd4", "#5ac8c8"];
   destroyChart("status"); __charts.status = new Chart(document.getElementById("chartStatus"), { type: "pie", data: { labels: ["Tamamlandı", "İptal"], datasets: [{ data: [completed, cancelled], backgroundColor: ["#4caf7d", "#cf6679"] }] }, options: { plugins: { legend: { labels: { color: "#e0e0e0" } } } } });
   const cancelLabels = Object.keys(cancelCounts); destroyChart("cancel"); __charts.cancel = new Chart(document.getElementById("chartCancel"), { type: "pie", data: { labels: cancelLabels.length ? cancelLabels : ["Veri yok"], datasets: [{ data: cancelLabels.length ? cancelLabels.map((k) => cancelCounts[k]) : [1], backgroundColor: palette }] }, options: { plugins: { legend: { labels: { color: "#e0e0e0" } } } } });
   const pilotLabels = Object.keys(pilotMin); destroyChart("pilot"); __charts.pilot = new Chart(document.getElementById("chartPilot"), { type: "bar", data: { labels: pilotLabels, datasets: [{ label: "Saat", data: pilotLabels.map((k) => +(pilotMin[k] / 60).toFixed(2)), backgroundColor: "#d4af37" }] }, options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#e0e0e0" } }, y: { ticks: { color: "#e0e0e0" } } } } });
-  const batteryLabels = Object.keys(batteryMin); destroyChart("battery"); __charts.battery = new Chart(document.getElementById("chartBattery"), { type: "bar", data: { labels: batteryLabels, datasets: [{ label: "Dakika (Formdan Gelen)", data: batteryLabels.map((k) => batteryMin[k]), backgroundColor: "#4a90d9" }] }, options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#e0e0e0" } }, y: { ticks: { color: "#e0e0e0" } } } } });
+
+  // Batarya grafiği: cycle sayısına göre, I → VII sırasında (değere göre değil)
+  const batteryLabels = sortBatteryIds(Object.keys(batteryCycles));
+  destroyChart("battery");
+  __charts.battery = new Chart(document.getElementById("chartBattery"), {
+    type: "bar",
+    data: { labels: batteryLabels, datasets: [{ label: "Cycle (Sorti)", data: batteryLabels.map((k) => batteryCycles[k]), backgroundColor: "#4a90d9" }] },
+    options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#e0e0e0" } }, y: { ticks: { color: "#e0e0e0" } } } }
+  });
 }
 function renderBatteryTable(batteryCycles, batteryMin) {
   let html = `<tr><th>Batarya Çift ID</th><th>Cycle (Geçmiş + Yeni Sorti)</th><th>Süre (Formdan, dk)</th><th>Durum</th></tr>`;
-  Object.keys(batteryCycles).sort().forEach((id) => { const cycles = batteryCycles[id]; const st = batteryStatusLabel(cycles); html += `<tr><td>${id}</td><td><b>${cycles}</b></td><td>${batteryMin[id] || 0}</td><td><span class="status-pill ${st.cls}">${st.label}</span></td></tr>`; });
+  sortBatteryIds(Object.keys(batteryCycles)).forEach((id) => { const cycles = batteryCycles[id]; const st = batteryStatusLabel(cycles); html += `<tr><td>${id}</td><td><b>${cycles}</b></td><td>${batteryMin[id] || 0}</td><td><span class="status-pill ${st.cls}">${st.label}</span></td></tr>`; });
   document.getElementById("batteryTable").innerHTML = html || "<tr><td>Veri yok</td></tr>";
 }
 function renderRawTable() {
@@ -570,17 +567,12 @@ function toExportRows() { return __records.map((r) => ({ Tarih: r.date, Pilot: r
 function downloadExcel() { if (typeof XLSX === "undefined") return; const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(toExportRows()), "Ucuslar"); XLSX.writeFile(wb, `DMB_Rapor.xlsx`); }
 function downloadCsv() { if (typeof XLSX === "undefined") return; const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(toExportRows())); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" })); a.download = `DMB_Rapor.csv`; a.click(); }
 
-/* ================= CHECKLIST KONTROLLERİ VE SAYFA KESME ================= */
 function resetChecklist() {
   if(confirm("Tüm işaretlemeler temizlenecek. Onaylıyor musunuz?")) {
     document.querySelectorAll('#pdfContent input[type="checkbox"]').forEach(cb => cb.checked = false);
   }
 }
 function downloadChecklistPDF() {
-  // html2canvas tabanlı kütüphaneler işaretli checkbox durumunu güvenilir şekilde
-  // yakalayamayabiliyor (yaygın bilinen bir sınırlama). Bunun yerine tarayıcının kendi
-  // yazdırma motorunu kullanıyoruz — işaretli kutular PDF'e birebir yansır ve harici
-  // bir kütüphaneye bağımlı kalınmaz. Yazdırma penceresinde "Hedef: PDF olarak kaydet" seçin.
   window.print();
 }
 </script>
