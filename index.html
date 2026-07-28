@@ -324,7 +324,7 @@
     </div>
   </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>
 const CONFIG = {
@@ -533,8 +533,24 @@ function renderReport() {
   drawCharts({ completed, cancelled, pilotMin, batteryMin, cancelCounts }); renderBatteryTable(batteryCycles, batteryMin); renderRawTable();
 }
 function destroyChart(id) { if (__charts[id]) { __charts[id].destroy(); delete __charts[id]; } }
-function drawCharts({ completed, cancelled, pilotMin, batteryMin, cancelCounts }) {
-  if (typeof Chart === "undefined") return; const palette = ["#d4af37", "#4caf7d", "#4a90d9", "#cf6679", "#e0b13c", "#9b6fd4", "#5ac8c8"];
+function drawCharts(chartData, retriesLeft) {
+  if (typeof retriesLeft === "undefined") retriesLeft = 15; // ~6 saniye boyunca dener (400ms x 15)
+  if (typeof Chart === "undefined") {
+    if (retriesLeft > 0) { setTimeout(() => drawCharts(chartData, retriesLeft - 1), 400); return; }
+    // Kütüphane hâlâ yüklenmediyse kullanıcıyı sessizce bırakmak yerine görünür bir uyarı bırak.
+    ["chartStatus", "chartCancel", "chartPilot", "chartBattery"].forEach((id) => {
+      const box = document.getElementById(id) && document.getElementById(id).parentElement;
+      if (box && !box.querySelector(".chart-fail-msg")) {
+        const msg = document.createElement("div");
+        msg.className = "chart-fail-msg"; msg.style.cssText = "color:var(--danger);font-size:12px;";
+        msg.textContent = "Grafik kütüphanesi yüklenemedi (internet/CDN engeli olabilir).";
+        box.appendChild(msg);
+      }
+    });
+    return;
+  }
+  const { completed, cancelled, pilotMin, batteryMin, cancelCounts } = chartData;
+  const palette = ["#d4af37", "#4caf7d", "#4a90d9", "#cf6679", "#e0b13c", "#9b6fd4", "#5ac8c8"];
   destroyChart("status"); __charts.status = new Chart(document.getElementById("chartStatus"), { type: "pie", data: { labels: ["Tamamlandı", "İptal"], datasets: [{ data: [completed, cancelled], backgroundColor: ["#4caf7d", "#cf6679"] }] }, options: { plugins: { legend: { labels: { color: "#e0e0e0" } } } } });
   const cancelLabels = Object.keys(cancelCounts); destroyChart("cancel"); __charts.cancel = new Chart(document.getElementById("chartCancel"), { type: "pie", data: { labels: cancelLabels.length ? cancelLabels : ["Veri yok"], datasets: [{ data: cancelLabels.length ? cancelLabels.map((k) => cancelCounts[k]) : [1], backgroundColor: palette }] }, options: { plugins: { legend: { labels: { color: "#e0e0e0" } } } } });
   const pilotLabels = Object.keys(pilotMin); destroyChart("pilot"); __charts.pilot = new Chart(document.getElementById("chartPilot"), { type: "bar", data: { labels: pilotLabels, datasets: [{ label: "Saat", data: pilotLabels.map((k) => +(pilotMin[k] / 60).toFixed(2)), backgroundColor: "#d4af37" }] }, options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#e0e0e0" } }, y: { ticks: { color: "#e0e0e0" } } } } });
