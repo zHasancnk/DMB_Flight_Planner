@@ -125,6 +125,22 @@
   .config-note { font-size: 12px; color: var(--text-dim); background: #191919; border: 1px dashed var(--border); padding: 10px; border-radius: 4px; margin-top: 10px; }
   code { background: #000; padding: 2px 5px; border-radius: 3px; color: var(--primary); font-size: 12px; }
 
+  /* ================= AYLIK UÇUŞ TAKVİMİ ================= */
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cal-nav-btn { width: auto; padding: 8px 14px; margin-top: 0; }
+  .cal-label { font-weight: bold; color: var(--primary); font-size: 15px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-dow { text-align: center; font-size: 11px; color: var(--text-dim); padding-bottom: 4px; }
+  .cal-day { background: var(--panel-bg-2); border: 1px solid var(--border); border-radius: 6px; min-height: 58px; padding: 6px; display: flex; flex-direction: column; justify-content: space-between; }
+  .cal-day.empty { background: transparent; border: none; }
+  .cal-day .cal-daynum { font-size: 11px; color: var(--text-dim); }
+  .cal-day .cal-count { font-size: 20px; font-weight: bold; color: var(--ok); text-align: center; }
+  .cal-day.zero { border-color: var(--danger); }
+  .cal-day.zero .cal-count { font-size: 12px; color: var(--danger); }
+  .cal-day.future { opacity: 0.35; }
+  .cal-legend { display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--text-dim); flex-wrap: wrap; }
+  .cal-legend span.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
   /* ================= CHECKLIST TASARIMI ================= */
   .pdf-wrapper { background: #fff; padding: 30px; border-radius: 8px; color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: auto; margin-top: 20px;}
   .pdf-header { text-align: center; border-bottom: 3px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; }
@@ -212,6 +228,23 @@
           <div class="chart-box"><h3>Batarya Çifti Kullanım Süresi (dk)</h3><canvas id="chartBattery"></canvas></div>
         </div>
       </div>
+
+      <div class="card">
+        <h3>Aylık Uçuş Takvimi</h3>
+        <p class="hint">Her günün üzerinde o gün kaç sorti kayda geçtiği yazar. Kırmızı çerçeveli günler, geçmişte kalmasına rağmen hiç kayıt bulunmayan günlerdir — gözden kaçan ya da hiç uçulmamış günleri buradan yakalayabilirsiniz.</p>
+        <div class="cal-header">
+          <button class="btn-secondary cal-nav-btn" onclick="changeCalendarMonth(-1)">← Önceki Ay</button>
+          <span id="calendarLabel" class="cal-label"></span>
+          <button class="btn-secondary cal-nav-btn" onclick="changeCalendarMonth(1)">Sonraki Ay →</button>
+        </div>
+        <div class="cal-grid" id="calendarGrid"></div>
+        <div class="cal-legend">
+          <span><span class="dot" style="background:var(--ok)"></span>Kayıtlı sorti sayısı</span>
+          <span><span class="dot" style="background:var(--danger)"></span>Kayıt yok (geçmiş gün)</span>
+          <span><span class="dot" style="background:var(--text-dim)"></span>Henüz gelmemiş gün</span>
+        </div>
+      </div>
+
       <div class="card">
         <h3>Batarya Çifti Ömür Durumu</h3>
         <p class="hint">Eşik: 200 sorti "İzle", 250 sorti "Emekliye Ayır" (DMB-SEC-UAS SOP referansı). Veriler eski uçuşlar baz alınarak üzerine eklenmektedir.</p>
@@ -480,8 +513,6 @@ function batteryStatusLabel(cycles) {
   if (cycles >= CONFIG.BATTERY_RETIRE) return { label: "EMEKLİYE AYIR", cls: "status-danger" }; if (cycles >= CONFIG.BATTERY_WARN) return { label: "İZLE", cls: "status-warn" }; return { label: "AKTİF", cls: "status-ok" };
 }
 
-// Batarya çift ID'lerini I → VII sırasına göre diziyoruz (Roma rakamı sırası);
-// listede olmayan ID'ler (ör. "Bilinmiyor") en sona, alfabetik olarak eklenir.
 const BATTERY_ID_ORDER = Object.keys(BATTERY_BASE_CYCLES);
 function sortBatteryIds(ids) {
   return ids.slice().sort((a, b) => {
@@ -491,6 +522,81 @@ function sortBatteryIds(ids) {
     if (ib === -1) return -1;
     return ia - ib;
   });
+}
+
+/* ================= AYLIK UÇUŞ TAKVİMİ ================= */
+let __dayCounts = {};
+let __calYear = null;
+let __calMonth = null; // 0-indeksli (Ocak=0)
+
+// Kayıttaki tarih hücresi "gg.aa.yyyy", "gg/aa/yyyy" veya 2 haneli yıl olabilir; hepsini
+// esnekçe yakalayıp "yyyy-aa-gg" anahtarına çeviriyoruz.
+function parseDateKey(dateStr) {
+  if (!dateStr) return null;
+  const m = String(dateStr).match(/(\d{1,2})[./](\d{1,2})[./](\d{2,4})/);
+  if (!m) return null;
+  let d = parseInt(m[1], 10), mo = parseInt(m[2], 10), y = parseInt(m[3], 10);
+  if (y < 100) y += 2000;
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  return { key: `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`, year: y, month: mo - 1, day: d };
+}
+
+function computeDayCounts(records) {
+  const counts = {};
+  records.forEach((r) => {
+    const parsed = parseDateKey(r.date);
+    if (parsed) counts[parsed.key] = (counts[parsed.key] || 0) + 1;
+  });
+  return counts;
+}
+
+function initCalendarMonthFromRecords() {
+  let latestKey = null;
+  Object.keys(__dayCounts).forEach((k) => { if (!latestKey || k > latestKey) latestKey = k; });
+  if (latestKey) {
+    const [y, mo] = latestKey.split("-").map(Number);
+    __calYear = y; __calMonth = mo - 1;
+  } else {
+    const now = new Date(); __calYear = now.getFullYear(); __calMonth = now.getMonth();
+  }
+}
+
+function renderCalendar() {
+  const grid = document.getElementById("calendarGrid");
+  const label = document.getElementById("calendarLabel");
+  if (!grid || __calYear === null) return;
+  const monthNames = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+  label.textContent = `${monthNames[__calMonth]} ${__calYear}`;
+
+  const firstDay = new Date(__calYear, __calMonth, 1);
+  const daysInMonth = new Date(__calYear, __calMonth + 1, 0).getDate();
+  // Pazartesi=0 ... Pazar=6 olacak şekilde kaydırıyoruz (JS'te Pazar=0 varsayılan)
+  const startWeekday = (firstDay.getDay() + 6) % 7;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  let html = "";
+  ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"].forEach((d) => { html += `<div class="cal-dow">${d}</div>`; });
+  for (let i = 0; i < startWeekday; i++) html += `<div class="cal-day empty"></div>`;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const key = `${__calYear}-${String(__calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const count = __dayCounts[key] || 0;
+    const cellDate = new Date(__calYear, __calMonth, day);
+    const isFuture = cellDate > today;
+    let cls = "cal-day";
+    if (isFuture) cls += " future";
+    else if (count === 0) cls += " zero";
+    const countHtml = isFuture ? "" : (count === 0 ? "0" : count);
+    html += `<div class="${cls}"><div class="cal-daynum">${day}</div><div class="cal-count">${countHtml}</div></div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function changeCalendarMonth(delta) {
+  if (__calYear === null) return;
+  __calMonth += delta;
+  if (__calMonth < 0) { __calMonth = 11; __calYear--; }
+  if (__calMonth > 11) { __calMonth = 0; __calYear++; }
+  renderCalendar();
 }
 
 async function loadReport(forceRefresh) {
@@ -520,7 +626,13 @@ function renderReport() {
 
   const cancelCounts = {}; __records.filter((r) => r.cancelled).forEach((r) => { const reason = classifyCancelReason(r.cancelReason) || "Belirtilmemiş"; cancelCounts[reason] = (cancelCounts[reason] || 0) + 1; });
 
-  drawCharts({ completed, cancelled, pilotMin, batteryMin, batteryCycles, cancelCounts }); renderBatteryTable(batteryCycles, batteryMin); renderRawTable();
+  drawCharts({ completed, cancelled, pilotMin, batteryMin, batteryCycles, cancelCounts });
+  renderBatteryTable(batteryCycles, batteryMin);
+  renderRawTable();
+
+  __dayCounts = computeDayCounts(__records);
+  if (__calYear === null) initCalendarMonthFromRecords();
+  renderCalendar();
 }
 function destroyChart(id) { if (__charts[id]) { __charts[id].destroy(); delete __charts[id]; } }
 function drawCharts(chartData, retriesLeft) {
@@ -544,7 +656,6 @@ function drawCharts(chartData, retriesLeft) {
   const cancelLabels = Object.keys(cancelCounts); destroyChart("cancel"); __charts.cancel = new Chart(document.getElementById("chartCancel"), { type: "pie", data: { labels: cancelLabels.length ? cancelLabels : ["Veri yok"], datasets: [{ data: cancelLabels.length ? cancelLabels.map((k) => cancelCounts[k]) : [1], backgroundColor: palette }] }, options: { plugins: { legend: { labels: { color: "#e0e0e0" } } } } });
   const pilotLabels = Object.keys(pilotMin); destroyChart("pilot"); __charts.pilot = new Chart(document.getElementById("chartPilot"), { type: "bar", data: { labels: pilotLabels, datasets: [{ label: "Saat", data: pilotLabels.map((k) => +(pilotMin[k] / 60).toFixed(2)), backgroundColor: "#d4af37" }] }, options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#e0e0e0" } }, y: { ticks: { color: "#e0e0e0" } } } } });
 
-  // Batarya grafiği: cycle sayısına göre, I → VII sırasında (değere göre değil)
   const batteryLabels = sortBatteryIds(Object.keys(batteryCycles));
   destroyChart("battery");
   __charts.battery = new Chart(document.getElementById("chartBattery"), {
