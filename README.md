@@ -1,8 +1,8 @@
-# DMB_Flight_Planner
-De Maris Bay Hoverfly Aviation Flight Planner System.
-DMB Operasyon Merkezi
+# Flight_Planner
+Hoverfly Aviation Flight Planner System.
+Operasyon Merkezi
 
-Bu repo, DMB Operasyon Merkezi paneli olan index.html dosyasını barındırır ve GitHub Pages üzerinden yayınlanır.
+Bu repo, Operasyon Merkezi paneli olan index.html dosyasını barındırır ve GitHub Pages üzerinden yayınlanır.
 
 Canlı link
 
